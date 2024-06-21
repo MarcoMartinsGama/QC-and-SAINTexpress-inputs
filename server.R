@@ -22,6 +22,7 @@ suppressPackageStartupMessages(library(ComplexHeatmap))
 
 function(input, output, session) {
   observeEvent(input$generate_qc, {
+    req(input$evidencefile, input$keysfile)
     output$output_text <- renderText({"Working... Please Wait."})
     
     delay(100, {
@@ -44,54 +45,31 @@ function(input, output, session) {
         )
       }
       
-      if (input$qc_basic == TRUE && !input$qc_ext) {
+      if (input$qc_basic) {
         artmsQualityControlEvidenceBasic(
           evidence_file = read.table(input$evidencefile$datapath, header = TRUE, sep = "\t"),
           keys_file = read.table(input$keysfile$datapath, header = TRUE, sep = "\t"),
           prot_exp = "APMS"
         )
-        output$output_text <- renderText({"Done."})
+    
         output$download_basic <- zip_and_download("qc_basic")
-        output$download_ui <- renderUI({
+        output$download_ui_basic <- renderUI({
           downloadButton("download_basic", "Download Basic QC")
         })
       }
       
-      if (input$qc_ext == TRUE && !input$qc_basic) {
+      if (input$qc_ext) {
         artmsQualityControlEvidenceExtended(
           evidence_file = read.table(input$evidencefile$datapath, header = TRUE, sep = "\t"),
           keys_file = read.table(input$keysfile$datapath, header = TRUE, sep = "\t"),
-          plotPCA = FALSE
+          plotPCA = input$perform_pca
         )
-        output$output_text <- renderText({"Done."})
         output$download_extended <- zip_and_download("qc_extended")
-        output$download_ui <- renderUI({
+        output$download_ui_extended <- renderUI({
           downloadButton("download_extended", "Download Extended QC")
         })
       }
-      
-      if (input$qc_basic == TRUE && input$qc_ext == TRUE) {
-        output$output_text <- renderText({"Done."})
-        artmsQualityControlEvidenceBasic(
-          evidence_file = read.table(input$evidencefile$datapath, header = TRUE, sep = "\t"),
-          keys_file = read.table(input$keysfile$datapath, header = TRUE, sep = "\t"),
-          prot_exp = "APMS"
-        )
-        
-        artmsQualityControlEvidenceExtended(
-          evidence_file = read.table(input$evidencefile$datapath, header = TRUE, sep = "\t"),
-          keys_file = read.table(input$keysfile$datapath, header = TRUE, sep = "\t"),
-          plotPCA = FALSE
-        )
-        output$download_basic <- zip_and_download("qc_basic")
-        output$download_extended <- zip_and_download("qc_extended")
-        output$download_ui <- renderUI({
-          tagList(
-            downloadButton("download_basic", "Download Basic QC"),
-            downloadButton("download_extended", "Download Extended QC")
-          )
-        })
-      }
+         output$output_text <- renderText({"Done."})
     })
   })
   
@@ -100,19 +78,39 @@ function(input, output, session) {
     output$output_text2 <- renderText({"Working... Please Wait."})
     
     delay(10, {
-      quant_variable <- c()
-      if (input$msspc) quant_variable <- c(quant_variable, "msspc")
-      if (input$msint) quant_variable <- c(quant_variable, "msint")
+      if (input$msspc) {
+        artmsEvidenceToSaintExpress(
+        evidence_file = input$evidencefile$datapath,
+        keys_file = input$keysfile$datapath,
+        ref_proteome_file = input$ref$datapath,
+        quant_variable = "msspc",
+        output_file = "msspc.txt")
+        output$download_ui2 <- renderUI({
+          tagList(
+            downloadButton("download_msspc_interactions", "Download msspc SAINT Interactions"),
+            downloadButton("download_msspc_baits", "Download msspc SAINT  Baits input file"),
+            downloadButton("download_msspc_preys", "Download msspc SAINT  Preys input file"))})}
+      if (input$msint) {
+        artmsEvidenceToSaintExpress(
+        evidence_file = input$evidencefile$datapath,
+        keys_file = input$keysfile$datapath,
+        ref_proteome_file = input$ref$datapath,
+        quant_variable = "msint",
+        output_file = "msint.txt")
+        output$download_ui2 <- renderUI({
+          tagList(
+            downloadButton("download_msint_interactions", "Download msint SAINT Interactions"),
+            downloadButton("download_msint_baits", "Download msint SAINT Baits input file"),
+            downloadButton("download_msint_preys", "Download msint SAINT Preys input file"))})}
       
-      if (length(quant_variable) == 2) {
+      if(input$msint && input$msspc){
         # Run with msspc
         artmsEvidenceToSaintExpress(
           evidence_file = input$evidencefile$datapath,
           keys_file = input$keysfile$datapath,
           ref_proteome_file = input$ref$datapath,
           quant_variable = "msspc",
-          output_file = "output.txt"
-        )
+          output_file = "msspc.txt")
         
         # Run with msint
         artmsEvidenceToSaintExpress(
@@ -120,78 +118,73 @@ function(input, output, session) {
           keys_file = input$keysfile$datapath,
           ref_proteome_file = input$ref$datapath,
           quant_variable = "msint",
-          output_file = "output2.txt"
-        )
-        
-        # Merge interaction files
-        o1<- fread("output-saint-interactions.txt")
-        o2 <- fread("output2-saint-interactions.txt")
-        output_interactions <- cbind(o1,o2[[4]])
-        
-        
-        
-        fwrite(output_interactions, "output-saint-interactions.txt", sep = "\t")
-        
-        
-        output$output_text2 <- renderText({
-          "SAINTexpress files generated and merged successfully."
-        })
-        
+          output_file = "msint.txt")
         output$download_ui2 <- renderUI({
           tagList(
-            downloadButton("download_saint_interactions", "Download Merged Interactions"),
-            downloadButton("download_saint_baits", "Download SAINT Baits input file"),
-            downloadButton("download_saint_preys", "Download SAINT Preys input file")
-          )
-        })
-      } else {
-        artmsEvidenceToSaintExpress(
-          evidence_file = input$evidencefile$datapath,
-          keys_file = input$keysfile$datapath,
-          ref_proteome_file = input$ref$datapath,
-          quant_variable = quant_variable,
-          output_file = "output.txt"
-        )
-        
+            downloadButton("download_msspc_interactions", "Download msspc SAINT Interactions"),
+            downloadButton("download_msspc_baits", "Download msspc SAINT  Baits input file"),
+            downloadButton("download_msspc_preys", "Download msspc SAINT  Preys input file"),
+            downloadButton("download_msint_interactions", "Download msint SAINT Interactions"),
+            downloadButton("download_msint_baits", "Download msint SAINT Baits input file"),
+            downloadButton("download_msint_preys", "Download msint SAINT Preys input file")
+          )})}
+      
         output$output_text2 <- renderText({
           "SAINTexpress files generated successfully."
-        })
-        
-        output$download_ui2 <- renderUI({
-          tagList(
-            downloadButton("download_saint_interactions", "Download SAINT Interactions"),
-            downloadButton("download_saint_baits", "Download SAINT Baits input file"),
-            downloadButton("download_saint_preys", "Download SAINT Preys input file")
-          )
-        })
-      }
-    })
+        }) 
+      })
   })
   
-  output$download_saint_baits <- downloadHandler(
+  output$download_msspc_baits <- downloadHandler(
     filename = function() {
-      "output-saint-baits.txt"
+      "msspc-saint-baits.txt"
     },
     content = function(file) {
-      file.copy("output-saint-baits.txt", file)
+      file.copy("msspc-saint-baits.txt", file)
     }
   )
   
-  output$download_saint_preys <- downloadHandler(
+  output$download_msspc_preys <- downloadHandler(
     filename = function() {
-      "output-saint-preys.txt"
+      "msspc-saint-preys.txt"
     },
     content = function(file) {
-      file.copy("output-saint-preys.txt", file)
+      file.copy("msspc-saint-preys.txt", file)
     }
   )
   
-  output$download_saint_interactions <- downloadHandler(
+  output$download_msspc_interactions <- downloadHandler(
     filename = function() {
-      "output-saint-interactions.txt"
+      "msspc-saint-interactions.txt"
     },
     content = function(file) {
-      file.copy("output-saint-interactions.txt", file)
+      file.copy("msspc-saint-interactions.txt", file)
+    }
+  )
+  output$download_msint_baits <- downloadHandler(
+    filename = function() {
+      "msint-saint-baits.txt"
+    },
+    content = function(file) {
+      file.copy("msint-saint-baits.txt", file)
+    }
+  )
+  
+  output$download_msint_preys <- downloadHandler(
+    filename = function() {
+      "msint-saint-preys.txt"
+    },
+    content = function(file) {
+      file.copy("msint-saint-preys.txt", file)
+    }
+  )
+  
+  output$download_msint_interactions <- downloadHandler(
+    filename = function() {
+      "msint-saint-interactions.txt"
+    },
+    content = function(file) {
+      file.copy("msint-saint-interactions.txt", file)
     }
   )
 }
