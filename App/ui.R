@@ -1,6 +1,5 @@
 library(shiny)
 fluidPage(
-  useShinyjs(),
   titlePanel("QC and SAINT inputs generator"),
   sidebarLayout(
     sidebarPanel(
