@@ -25,9 +25,20 @@ function(input, output, session) {
         )
       }
       
+      extract_zip <- function(zip_path) {
+        extract_to <- dirname(zip_path)
+        unzip(zip_path, exdir = extract_to)
+        list.files(extract_to, full.names = TRUE)
+      }
+      
+      extracted_files <- extract_zip(input$evidencefile$datapath)
+      evidence_file_path <- extracted_files[grep("evidence.txt$", extracted_files)]
+      
+      
       if (input$qc_basic) {
+        print(evidence_file_path)
         artmsQualityControlEvidenceBasic(
-          evidence_file = read.table(input$evidencefile$datapath, header = TRUE, sep = "\t"),
+          evidence_file = read.table(evidence_file_path, header = TRUE, sep = "\t"),
           keys_file = read.table(input$keysfile$datapath, header = TRUE, sep = "\t"),
           prot_exp = "APMS"
         )
@@ -40,7 +51,7 @@ function(input, output, session) {
       
       if (input$qc_ext) {
         artmsQualityControlEvidenceExtended(
-          evidence_file = read.table(input$evidencefile$datapath, header = TRUE, sep = "\t"),
+          evidence_file = read.table(evidence_file_path, header = TRUE, sep = "\t"),
           keys_file = read.table(input$keysfile$datapath, header = TRUE, sep = "\t"),
           plotPCA = input$perform_pca
         )

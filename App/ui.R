@@ -8,7 +8,8 @@ fluidPage(
   sidebarLayout(
     sidebarPanel(
       # Upload necessary files
-      fileInput("evidencefile", "Upload evidence.txt", accept = c("text/plain", ".txt")),
+      fileInput("evidencefile", "Upload evidence.zip (evidence.txt need to be compressed to be uploaded in the website.
+                Please use local (main repository) version if the upload fails.)", accept = c(".zip","7z")),
       fileInput("keysfile", "Upload keys.txt", accept = c("text/plain", ".txt")),
       fileInput("ref", "Upload Reference proteome", accept = ".fasta")
     ),
