@@ -1,5 +1,16 @@
 library(shiny)
 
+
+if (!requireNamespace("BiocManager", quietly = TRUE))install.packages("BiocManager")
+
+library(BiocManager)
+
+if (!requireNamespace("MSstats", quietly = TRUE)) BiocManager::install("MSstats",force = TRUE)
+if (!requireNamespace("artMS", quietly = TRUE)) BiocManager::install("artMS",force = TRUE)
+
+library(artMS)
+
+
 # Option to allow big files like .fasta files
 options(shiny.maxRequestSize = 1000*1024^2)
 
@@ -26,8 +37,8 @@ function(input, output, session) {
       }
       
       extract_zip <- function(zip_path) {
-        extract_to <- dirname(zip_path)
-        unzip(zip_path, exdir = extract_to)
+        dir = dirname(zip_path)
+        unzip(zip_path, ex)
         list.files(extract_to, full.names = TRUE)
       }
       
